@@ -31,7 +31,7 @@ var indexTemplate = _.template(indexFile);
 
 var compliments = [
   'Thanks to Hong4rc for the modern and amazing gulp workflow!',
-  'I hope you all have a great day :)'
+  'I hope you all have a great day :)',
 ];
 var compliment = (done) => {
   var index = Math.floor(Math.random() * compliments.length);
@@ -45,17 +45,16 @@ const lintStrings = (done) => {
   done();
 };
 
-
 var destDir = './build/';
 
-var buildIndex = function(done) {
+var buildIndex = function (done) {
   log('Building index...');
 
   // first find the one in here that we want
   var buildFiles = readdirSync(destDir);
 
   var jsRegex = /bundle-[\.\w]+\.js/;
-  var jsFile = buildFiles.find(function(name) {
+  var jsFile = buildFiles.find(function (name) {
     return jsRegex.exec(name);
   });
   if (!jsFile) {
@@ -64,7 +63,7 @@ var buildIndex = function(done) {
   log('Found hashed js file: ' + jsFile);
 
   var styleRegex = /main-[\.\w]+\.css/;
-  var styleFile = buildFiles.find(function(name) {
+  var styleFile = buildFiles.find(function (name) {
     return styleRegex.exec(name);
   });
   if (!styleFile) {
@@ -90,83 +89,75 @@ var buildIndex = function(done) {
   done();
 };
 
-var getBundle = function() {
+var getBundle = function () {
   return browserify({
     entries: [...glob.sync('src/**/*.js'), ...glob.sync('src/**/*.jsx')],
     debug: true,
   })
-  .transform(babelify, { presets: ['@babel/preset-react'] })
-  .bundle()
-  .pipe(source('bundle.js'))
-  .pipe(buffer())
-  .pipe(gHash());
+    .transform(babelify, { presets: ['@babel/preset-react'] })
+    .bundle()
+    .pipe(source('bundle.js'))
+    .pipe(buffer())
+    .pipe(gHash());
 };
 
 var clean = function () {
-  return src(destDir, { read: false, allowEmpty: true })
-    .pipe(gClean());
+  return src(destDir, { read: false, allowEmpty: true }).pipe(gClean());
 };
 
-var jshint = function() {
-  return src([
-    'gulpfile.js',
-    '__tests__/',
-    'src/'
-  ])
-  .pipe(gJshint())
-  .pipe(gJshint.reporter('default'));
+var jshint = function () {
+  return src(['gulpfile.js', '__tests__/', 'src/'])
+    .pipe(gJshint())
+    .pipe(gJshint.reporter('default'));
 };
 
-var ifyBuild = function() {
-  return getBundle()
-    .pipe(dest(destDir));
+var ifyBuild = function () {
+  return getBundle().pipe(dest(destDir));
 };
 
-var miniBuild = function() {
+var miniBuild = function () {
   process.env.NODE_ENV = 'production';
-  return getBundle()
-    .pipe(gTerser())
-    .pipe(dest(destDir));
+  return getBundle().pipe(gTerser()).pipe(dest(destDir));
 };
 
-var style = function() {
-  var chain = src('src/style/*.css')
-    .pipe(concat('main.css'));
+var style = function () {
+  var chain = src('src/style/*.css').pipe(concat('main.css'));
 
   if (process.env.NODE_ENV === 'production') {
     chain = chain.pipe(cleanCSS());
   }
 
-  return chain.pipe(gHash())
-    .pipe(dest(destDir));
+  return chain.pipe(gHash()).pipe(dest(destDir));
 };
 
-var jasmine = function() {
-  return src('__tests__/*.spec.js')
-    .pipe(gJasmine({
+var jasmine = function () {
+  return src('__tests__/*.spec.js').pipe(
+    gJasmine({
       config: {
         verbose: true,
         random: false,
       },
       reporter: new SpecReporter(),
-  }));
+    })
+  );
 };
 
-var gitAdd = function(done) {
+var gitAdd = function (done) {
   execSync('git add build/');
   done();
 };
 
-var gitDeployMergeMain = function(done) {
+var gitDeployMergeMain = function (done) {
   execSync('git checkout gh-pages && git merge main -m "merge main"');
   done();
 };
 
-var gitDeployPushOrigin = function(done) {
-  execSync('git commit -am "rebuild for prod"; ' +
-    'git push origin gh-pages --force && ' +
-    'git branch -f trunk gh-pages && ' +
-    'git checkout main'
+var gitDeployPushOrigin = function (done) {
+  execSync(
+    'git commit -am "rebuild for prod"; ' +
+      'git push origin gh-pages --force && ' +
+      'git branch -f trunk gh-pages && ' +
+      'git checkout main'
   );
   done();
 };
@@ -175,9 +166,14 @@ var fastBuild = series(clean, ifyBuild, style, buildIndex, jshint);
 
 var build = series(
   clean,
-  miniBuild, style, buildIndex,
-  gitAdd, jasmine, jshint,
-  lintStrings, compliment
+  miniBuild,
+  style,
+  buildIndex,
+  gitAdd,
+  jasmine,
+  jshint,
+  lintStrings,
+  compliment
 );
 
 var deploy = series(
@@ -192,14 +188,17 @@ var deploy = series(
 
 var lint = series(jshint, compliment);
 
-var watching = function() {
-  return watch([
-    'gulpfile.js',
-    '__tests__/git.spec.js',
-    'src/js/**/*.js',
-    'src/js/**/**/*.js',
-    'src/levels/**/*.js'
-  ], series([fastBuild , jasmine, jshint, lintStrings]));
+var watching = function () {
+  return watch(
+    [
+      'gulpfile.js',
+      '__tests__/git.spec.js',
+      'src/js/**/*.js',
+      'src/js/**/**/*.js',
+      'src/levels/**/*.js',
+    ],
+    series([fastBuild, jasmine, jshint, lintStrings])
+  );
 };
 
 module.exports = {
