@@ -196,6 +196,7 @@ var watching = function () {
       'src/js/**/*.js',
       'src/js/**/**/*.js',
       'src/levels/**/*.js',
+      'src/style/*.css',
     ],
     series([fastBuild, jasmine, jshint, lintStrings])
   );
